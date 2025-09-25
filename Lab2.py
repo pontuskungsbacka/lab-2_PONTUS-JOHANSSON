@@ -220,3 +220,20 @@ plt.ylabel("Height (cm)")
 plt.title("Classification of user points (k=10)")
 plt.legend()
 plt.show()
+
+# --- 100 TRAIN & 50 TEST DATA POINT 
+# --- Randomnize pichu and pikachu so we don't use the same
+np.random.seed(42)  # Splitting
+pichu_shuffled   = pichu[np.random.permutation(len(pichu))]
+pikachu_shuffled = pikachu[np.random.permutation(len(pikachu))]
+
+# Making copies of train and test data
+train_data = np.vstack([pichu_shuffled[:50], pikachu_shuffled[:50]])
+test_data  = np.vstack([pichu_shuffled[50:75], pikachu_shuffled[50:75]])
+
+# Shuffle the train and test data set so pichu and pikachu does not come in order
+train_data = train_data[np.random.permutation(len(train_data))]
+test_data  = test_data[np.random.permutation(len(test_data))]
+
+print("Train shape:", train_data.shape)  # (100, 3)
+print("Test shape:", test_data.shape)    # (50, 3)
