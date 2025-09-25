@@ -156,12 +156,67 @@ plt.scatter(pikachu[:, 0], pikachu[:, 1], color="#E19720", label="Pikachu (train
 shown = set()
 for (width, height, lab) in classified_Userpoint:
     color = "#FFF06A" if lab == "Pichu" else "#E19720"
-    lbl = f"User point ({lab})" if lab not in shown else "_nolegend_"
-    plt.scatter(width, height, color=color, marker="o", s=250, edgecolors="red", label=lbl)
+    lbl = f"User points ({lab})" if lab not in shown else "_nolegend_"
+    plt.scatter(width, height, color=color, marker="o", s=100, edgecolors="red", label=lbl)
     shown.add(lab)
 
 plt.xlabel("Width (cm)")
 plt.ylabel("Height (cm)")
-plt.title("Classification of User point (1-NN)")
+plt.title("Classification of User points (1-NN)")
+plt.legend()
+plt.show()
+
+# --- Define KKN-10 ---
+def classify_knn(classified_Userpoint, datapoints, k=10):
+    distances = []
+    for train in datapoints:
+        dist = euclidean_distance(classified_Userpoint, train[:2])
+        distances.append((dist, int(train[2])))
+
+    # sort by distance and take the k closest
+    distances.sort(key=lambda x: x[0])
+    k_nearest = distances[:k]
+
+    # count how many are Pichu (0) and Pikachu (1)
+    labels = [label for _, label in k_nearest]
+    pichu_count = labels.count(0)
+    pikachu_count = labels.count(1)
+
+    return "Pichu" if pichu_count > pikachu_count else "Pikachu"
+
+# Testing with our four test points
+for i, test in enumerate(classified_Userpoint):
+    predicted = classify_knn(test, data, k=10)
+    print(f"Test point {i+1} {tuple(test)} classified as: {predicted} (k=10)")
+
+classified_points_k10 = []
+for test in classified_Userpoint:
+    predicted = classify_knn(test, data, k=10)
+    classified_points_k10.append((test[0], test[1], predicted))
+
+# Scatter plot with KKN-10 with test points
+plt.scatter(pichu[:, 0], pichu[:, 1], color="#FFF06A", label="Pichu (train)")
+plt.scatter(pikachu[:, 0], pikachu[:, 1], color="#E19720", label="Pikachu (train)")
+
+# --- Putting in user point nearest neaber data in plot with stars ---
+shown = set()  # Keeps track of which classes are already in the scatter plot
+
+# --- For Loop to add user point with closest data point label --- 
+for (width, height, lab) in classified_points_k10:
+    color = "#FFF06A" if lab == "Pichu" else "#E19720"
+    # Giving correct color depending on value
+    # Using "_nolegend_" so we don't get duplicates. And shortened label to lbl
+    lbl = f"User points ({lab})" if lab not in shown else "_nolegend_"
+
+    plt.scatter(width, height,
+                color=color, marker="o", s=100, edgecolors="black",
+                label=lbl)
+
+    # Add test data point to scatter plot
+    shown.add(lab)
+
+plt.xlabel("Width (cm)")
+plt.ylabel("Height (cm)")
+plt.title("Classification of user points (k=10)")
 plt.legend()
 plt.show()
