@@ -101,3 +101,67 @@ plt.ylabel("Height (cm)")
 plt.title("Classification of test points (1-NN)")
 plt.legend()
 plt.show()
+
+# --- Creating input with error handeling ----
+
+def getUserInput(prompt): 
+    while True:
+        answer = input(prompt).strip() # Takes away the space 
+        answer = answer.replace(",", ".") # Letting the user write 25,0 and conver it to 25.0
+        try:
+            value = float(answer)
+        except ValueError:
+            print("Error: Enter a numeric value(ex. 22.5). Please try again.")
+            continue
+
+        # Not NaN/inf
+        if not np.isfinite(value):
+            print("Error: Value must be finite (not NaN/inf). Please try again.")
+            continue
+
+        if value <= 0:
+            print("Error: Value must be > 0, cannot be a negative number. Please try again.")
+            continue
+
+        return value
+
+def UserInput():
+    width  = getUserInput("Enter width (cm): ")
+    height = getUserInput("Enter height (cm): ")
+    return np.array([width, height])
+
+# Read one user point
+user_point = UserInput()
+print("Your points:", user_point)
+print(f"{user_point[0]:.1f}, {user_point[1]:.1f}")  
+
+# --- Test the point --- 
+classified_Userpoint = []
+for i, test in enumerate(user_point):
+    
+# --- Classify the user point with 1-NN ---
+    distances = [(euclidean_distance(user_point, tr[:2]), int(tr[2])) for tr in data]
+    nearest_label = min(distances, key=lambda x: x[0])[1]
+    predicted = "Pichu" if nearest_label == 0 else "Pikachu"
+    print(f"User point -> {user_point[0]:.1f}, {user_point[1]:.1f} classified as: {predicted}")
+
+# Keep a list (useful if you later add more user points)
+classified_Userpoint = [(user_point[0], user_point[1], predicted)]
+
+# --- Plot ---
+plt.scatter(pichu[:, 0], pichu[:, 1], color="#FFF06A", label="Pichu (train)")
+plt.scatter(pikachu[:, 0], pikachu[:, 1], color="#E19720", label="Pikachu (train)")
+
+# Add the user point
+shown = set()
+for (width, height, lab) in classified_Userpoint:
+    color = "#FFF06A" if lab == "Pichu" else "#E19720"
+    lbl = f"User point ({lab})" if lab not in shown else "_nolegend_"
+    plt.scatter(width, height, color=color, marker="o", s=250, edgecolors="red", label=lbl)
+    shown.add(lab)
+
+plt.xlabel("Width (cm)")
+plt.ylabel("Height (cm)")
+plt.title("Classification of User point (1-NN)")
+plt.legend()
+plt.show()
