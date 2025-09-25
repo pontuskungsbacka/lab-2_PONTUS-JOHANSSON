@@ -33,3 +33,26 @@ plt.ylabel("Height (cm)")
 plt.title("Pichu vs Pikachu data points")
 plt.legend()
 plt.show()
+
+# --- TEST DATA SET ---
+# --- Testpoints list ---
+testpoints = []
+
+pat = re.compile(r'\(\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*\)') #Finds patterns
+
+# --- Formatting and cleaning test points ---
+with open(testpointsfile, "r") as file:
+    for line in file:
+        match = pat.search(line)            # Looking for value in the parentheses (width, height)
+        if not match:
+            continue                    # Skips the header 
+        width = float(match.group(1))           # Getting width - first value
+        height = float(match.group(2))           # Getting height - second value
+        testpoints.append((width, height))
+
+testpoints = np.array(testpoints)
+
+# --- Defining Euclidean distance for testing nearest label point  ---
+
+def euclidean_distance(p1, p2):
+    return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
