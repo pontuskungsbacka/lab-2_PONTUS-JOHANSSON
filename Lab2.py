@@ -237,3 +237,21 @@ test_data  = test_data[np.random.permutation(len(test_data))]
 
 print("Train shape:", train_data.shape)  # (100, 3)
 print("Test shape:", test_data.shape)    # (50, 3)
+
+#Visulize the data
+
+plt.scatter(train_data[train_data[:, 2] == 0][:, 0], train_data[train_data[:, 2] == 0][:, 1], 
+            color="#E6CE2B", label="Pichu (train)", alpha=0.6)
+plt.scatter(train_data[train_data[:, 2] == 1][:, 0], train_data[train_data[:, 2] == 1][:, 1], 
+            color="#E19720", label="Pikachu (train)", alpha=0.6)
+
+plt.scatter(test_data[test_data[:, 2] == 0][:, 0], test_data[test_data[:, 2] == 0][:, 1], 
+            color="#2F3336", marker="x", label="Pichu (test)")
+plt.scatter(test_data[test_data[:, 2] == 1][:, 0], test_data[test_data[:, 2] == 1][:, 1], 
+            color="#F62D14", marker="x", label="Pikachu (test)")
+
+plt.xlabel("Width (cm)")
+plt.ylabel("Height (cm)")
+plt.title("Train vs Test data (Pichu & Pikachu)")
+plt.legend()
+plt.show()
