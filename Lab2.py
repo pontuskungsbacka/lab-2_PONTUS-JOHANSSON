@@ -1,33 +1,46 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import re
-"""
 
 """
+Lab 2 –  (Pichu vs Pikachu)
+- Load training data (width, height, label) from file
+- Parse test points from a formatted text file "(x, y)"
+- Classify with 1-NN and k-NN (k=10), visualize results
+- Build a stratified train/test split (100/50) and evaluate accuracy
+- Repeating previously step 10 times, calculating accuracy over 10 times
+
+Project made by Pontus Johansson AIM25G
+A light guidance has been done with ChatGPT to understand the structure and troubleshooting,
+but I have programmade as I want to build the application up with Pichu vs Pikachu. Also help from W3school, 
+medium.com(K-Nearest Neighbors) and searches on the internet with suggestions 
+from Copilot have helped me to complete the task.
+"""
+
 # --- Paths ---
 datapointsfile =r"C:\Users\Pontus\python-programming-PONTUS-JOHANSSON\Labs\Lab-2\Data\datapoints.txt"
 testpointsfile =r"C:\Users\Pontus\python-programming-PONTUS-JOHANSSON\Labs\Lab-2\Data\testpoints.txt"
 
 # --- DATA POINTS ---
-# --- Import datapoints as list ---
+# Load datapoints into a list of tuples: (width: float, height: float, label: int)
 datapoints = []
 
-# --- Open and clean data ---
+# Read file, skip header, parse numeric types (float, float, int)
 with open(datapointsfile, "r") as file: 
     next(file) # Skip first line
     for line in file:
         width, height, label = line.strip().split(",")
         datapoints.append((float(width), float(height), int(label)))
         
-print(datapoints)
+# print(datapoints) print out the list
 
-data = np.array(datapoints) # Making a Numpy array
+data = np.array(datapoints) # # Convert to NumPy array for vectorized operations
 
-# --- Seperate Pichu and Pikachu for making it easier to read out ---
+# Split by class label for plotting convenience
 pichu = data[data[:, 2] == 0]   # all line with label = 0
 pikachu = data[data[:, 2] == 1] # all line with label = 1
 
-# --- Scatter plot ---
+# --- Scatter plot of training data from data points ---
 plt.scatter(pikachu[:, 0], pikachu[:, 1], color="#E19720", label="Pikachu")
 plt.scatter(pichu[:, 0], pichu[:, 1], color="#FFF06A", label="Pichu")
 plt.xlabel("Width (cm)")
@@ -37,12 +50,11 @@ plt.legend()
 plt.show()
 
 # --- TEST DATA SET ---
-# --- Testpoints list ---
+# Container for parsed test points (width, height)
 testpoints = []
 
-pat = re.compile(r'\(\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*\)') #Finds patterns From searching in on Edge, co pilot suggested to use this code strip
-
-# --- Formatting and cleaning test points ---
+pat = re.compile(r'\(\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*\)') # Regex: capture two floats inside parentheses, e.g., "(25, 32)" with optional spaces/signs // Copilot suggestion 
+# --- Reading and cleaning test points ---
 with open(testpointsfile, "r") as file:
     for line in file:
         match = pat.search(line)            # Looking for value in the parentheses (width, height)
@@ -54,37 +66,36 @@ with open(testpointsfile, "r") as file:
 
 testpoints = np.array(testpoints)
 
-# --- Defining Euclidean distance for testing nearest label point  ---
+# Euclidean distance in 2D (width, height)
 
 def euclidean_distance(p1, p2):
     return np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
-# --- Classify - test points with 1-nn ---
+# Classify test points with 1-NN
 classified_points = []
 for i, test in enumerate(testpoints):
     distancesTestpoints = [] # Creating a list for distance
     for train in data:
         dist = euclidean_distance(test, train[:2])
         distancesTestpoints.append((dist, int(train[2])))
-    #print(distances) check whats in the list
-    # Sort distance with closest label 0 or 1
+    # Sort by distance (ascending) and take nearest label (0 or 1)
     distancesTestpoints.sort(key=lambda x: x[0])
     nearest_label = distancesTestpoints[0][1]
     predicted = "Pichu" if nearest_label == 0 else "Pikachu"
     classified_points.append((test[0], test[1], predicted))
 
 
-    # Write out distances with closest label 
+    # Log classification result for this test point
     print(f"Test points {i+1} with (width, height): {test[0]}, {test[1]} predicted as: {predicted}")
     
-# --- Make a new graf for checking the test data ---
+# --- Plot training data and classified test points ---
 plt.scatter(pichu[:, 0], pichu[:, 1], color="#FFF06A", label="Pichu (train)")
 plt.scatter(pikachu[:, 0], pikachu[:, 1], color="#E19720", label="Pikachu (train)")
 
-# --- Putting in test point nearest neaber data in plot with stars ---
-shown = set()  # Keeps track of which classes are already in the scatter plot
+# Add classified test points (stars); use a set to avoid duplicate legend entries
+shown = set()
 
-# --- For Loop to add test point with closest data point label --- 
+# Plot each classified test point; label only the first occurrence per class
 for (width, height, lab) in classified_points:
     color = "#FFF06A" if lab == "Pichu" else "#E19720"
     # Giving correct color depending on value
@@ -104,19 +115,18 @@ plt.title("Classification of test points (1-NN)")
 plt.legend()
 plt.show()
 
-# --- Creating input with error handeling ----
+# --- Collect user input with validation (numeric, finite, > 0) ---
 
 def getUserInput(prompt): 
     while True:
-        answer = input(prompt).strip() # Takes away the space 
-        answer = answer.replace(",", ".") # Letting the user write 25,0 and conver it to 25.0
+        answer = input(prompt).strip() # remove leading/trailing whitespace 
+        answer = answer.replace(",", ".") # allow comma decimals (e.g., "25,0" -> "25.0")
         try:
             value = float(answer)
         except ValueError:
             print("Error: Enter a numeric value(ex. 22.5). Please try again.")
             continue
 
-        # Not NaN/inf
         if not np.isfinite(value):
             print("Error: Value must be finite (not NaN/inf). Please try again.")
             continue
@@ -137,11 +147,10 @@ user_point = UserInput()
 print("Your points:", user_point)
 print(f"{user_point[0]:.1f}, {user_point[1]:.1f}")  
 
-# --- Test the point --- 
+# --- Classify the single user point with 1-NN ---
 classified_Userpoint = []
 for i, test in enumerate(user_point):
     
-# --- Classify the user point with 1-NN ---
     distances = [(euclidean_distance(user_point, tr[:2]), int(tr[2])) for tr in data]
     nearest_label = min(distances, key=lambda x: x[0])[1]
     predicted = "Pichu" if nearest_label == 0 else "Pikachu"
@@ -168,7 +177,7 @@ plt.title("Classification of User points (1-NN)")
 plt.legend()
 plt.show()
 
-# --- Define KKN-10 ---
+# --- Define k-NN (k=10) classifier for a single point ---
 def classify_knn(classified_Userpoint, datapoints, k=10):
     distances = []
     for train in datapoints:
@@ -186,7 +195,7 @@ def classify_knn(classified_Userpoint, datapoints, k=10):
 
     return "Pichu" if pichu_count > pikachu_count else "Pikachu"
 
-# Testing with our four test points
+# Classify the (user) point(s) with k=10 and print results
 for i, test in enumerate(classified_Userpoint):
     predicted = classify_knn(test, data, k=10)
     print(f"Test point {i+1} {tuple(test)} classified as: {predicted} (k=10)")
@@ -196,12 +205,12 @@ for test in classified_Userpoint:
     predicted = classify_knn(test, data, k=10)
     classified_points_k10.append((test[0], test[1], predicted))
 
-# Scatter plot with KKN-10 with test points
+# Scatter plot with k-NN (k=10) classification for user point(s)
 plt.scatter(pichu[:, 0], pichu[:, 1], color="#FFF06A", label="Pichu (train)")
 plt.scatter(pikachu[:, 0], pikachu[:, 1], color="#E19720", label="Pikachu (train)")
 
-# --- Putting in user point nearest neaber data in plot with stars ---
-shown = set()  # Keeps track of which classes are already in the scatter plot
+# Add user point(s); avoid duplicate legend entries via a set
+shown = set()
 
 # --- For Loop to add user point with closest data point label --- 
 for (width, height, lab) in classified_points_k10:
@@ -223,8 +232,8 @@ plt.title("Classification of user points (k=10)")
 plt.legend()
 plt.show()
 
-# --- 100 TRAIN & 50 TEST DATA POINT 
-# --- Randomnize pichu and pikachu so we don't use the same
+# --- Build 100-train (50 Pichu, 50 Pikachu) and 50-test (25/25) via stratified sampling ---
+# Shuffle within each class to avoid reusing the same examples
 np.random.seed(42)  # Splitting
 pichu_shuffled   = pichu[np.random.permutation(len(pichu))]
 pikachu_shuffled = pikachu[np.random.permutation(len(pikachu))]
@@ -233,14 +242,14 @@ pikachu_shuffled = pikachu[np.random.permutation(len(pikachu))]
 train_data = np.vstack([pichu_shuffled[:50], pikachu_shuffled[:50]])
 test_data  = np.vstack([pichu_shuffled[50:75], pikachu_shuffled[50:75]])
 
-# Shuffle the train and test data set so pichu and pikachu does not come in order
+# Shuffle train/test order so classes are not grouped
 train_data = train_data[np.random.permutation(len(train_data))]
 test_data  = test_data[np.random.permutation(len(test_data))]
 
 print("Train shape:", train_data.shape)  # (100, 3)
 print("Test shape:", test_data.shape)    # (50, 3)
 
-#Visulize the data
+# Visualize train vs test (class-colored)
 
 plt.scatter(train_data[train_data[:, 2] == 0][:, 0], train_data[train_data[:, 2] == 0][:, 1], 
             color="#E6CE2B", label="Pichu (train)", alpha=0.6)
@@ -258,13 +267,13 @@ plt.title("Train vs Test data (Pichu & Pikachu)")
 plt.legend()
 plt.show()
 
-# --- Classifying KNN 10 and calculating accuracy ---
+# --- Classify with k-NN (k=10) and compute accuracy ---
 
 def classify_knn(test_point, train_data, k=10):
     dists = []
-    for tr in train_data:
-        d = euclidean_distance(test_point, tr[:2])
-        dists.append((d, int(tr[2])))
+    for train in train_data:
+        d = euclidean_distance(test_point, train[:2])
+        dists.append((d, int(train[2])))
     dists.sort(key=lambda x: x[0])
     k_nearest = dists[:k]
     labels = [lab for _, lab in k_nearest]
@@ -282,29 +291,30 @@ def calculate_accuracy(train_data, test_data, k=10):
             correct += 1
     return correct / len(test_data)
 
-# 1) Actual labels in the test set (0 = Pichu, 1 = Pikachu)
+# Actual labels in the test set (0 = Pichu, 1 = Pikachu)
 y_true = test_data[:, 2].astype(int)
 
-# 2) Predictions for all test examples with any k
+# Predictions for all test examples at given k
 def predict_all(test_data, train_data, k=10):
     return np.array([classify_knn(row[:2], train_data, k) for row in test_data])
 
 k = 10 
 y_pred = predict_all(test_data, train_data, k=k)
 
-# 3) Count TP, TN, FP, FN (Pikachu = positive = 1)
+# Count TP, TN, FP, FN (Pikachu = positive = 1)
+
 TP = int(np.sum((y_true == 1) & (y_pred == 1)))  # Pikachu correct
 TN = int(np.sum((y_true == 0) & (y_pred == 0)))  # Pichu correct
 FP = int(np.sum((y_true == 0) & (y_pred == 1)))  # Pichu -> Pikachu (FALSE)
 FN = int(np.sum((y_true == 1) & (y_pred == 0)))  # Pikachu -> Pichu (FALSE)
 
-# 4) Accuracy = (TP + TN) / total
+# Accuracy = (TP + TN) / total
 accuracy = (TP + TN) / y_true.size
 
 print(f"k={k}  ->  TP={TP}, TN={TN}, FP={FP}, FN={FN}")
 print(f"Accuracy: {accuracy:.3f}")
 
-# --------- Making the experiment 10 times and calculating the accuracy --------
+# --- Repeat stratified split + evaluation over 10 seeds ---
 
 def make_stratified_split(data, rng, n_train_per_class=50, n_test_per_class=25):
     """Returns (train_data, test_data) with exact balance 50/50 and 25/25 respectively."""
@@ -339,11 +349,11 @@ def make_stratified_split(data, rng, n_train_per_class=50, n_test_per_class=25):
     test  = test[rng.permutation(len(test))]
     return train, test
 
-# --------- Parametrar ---------
+# --- Parametrar ---
 K = 10
 SEEDS = [11,22,33,44,55,66,77,88,99,111]  # 10 different seeds
 
-# --------- Makin the experiment 10 times ---------
+# --- Run the experiment 10 times ---
 accuracies = []
 for run, seed in enumerate(SEEDS, start=1):
     rng = np.random.default_rng(seed)
@@ -352,7 +362,7 @@ for run, seed in enumerate(SEEDS, start=1):
     accuracies.append(acc)
     print(f"Running {run:2d} (seed={seed}): accuracy = {acc:.2f}")
 
-# --------- Compilation ---------
+# --- Aggregate results ---
 accuracies = np.array(accuracies, dtype=float)
 mean_acc = float(np.mean(accuracies))
 std_acc  = float(np.std(accuracies, ddof=1))
@@ -364,7 +374,7 @@ print(f"Middle accuracy: {mean_acc:.3f}")
 print(f"Std (spread): {std_acc:.3f}")
 print(f"Min/Max: {min_acc:.3f} / {max_acc:.3f}")
 
-# --------- Plot ---------
+# --- Plot ---
 plt.figure(figsize=(7,4))
 plt.plot(range(1, len(accuracies)+1), accuracies, marker="o")
 plt.axhline(mean_acc, linestyle="--")
