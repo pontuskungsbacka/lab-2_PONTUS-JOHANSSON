@@ -95,6 +95,8 @@ plt.scatter(pikachu[:, 0], pikachu[:, 1], color="#E19720", label="Pikachu (train
 # Add classified test points (stars); use a set to avoid duplicate legend entries
 shown = set()
 
+"""Inspired by ChatGPT: use a set + "_nolegend_" to avoid duplicate legend entries per class."""
+
 # Plot each classified test point; label only the first occurrence per class
 for (width, height, lab) in classified_points:
     color = "#FFF06A" if lab == "Pichu" else "#E19720"
@@ -116,7 +118,7 @@ plt.legend()
 plt.show()
 
 # --- Collect user input with validation (numeric, finite, > 0) ---
-
+# Based on ChatGPT advice: robust numeric input (supports comma decimal, rejects NaN/inf, requires >0).
 def getUserInput(prompt): 
     while True:
         answer = input(prompt).strip() # remove leading/trailing whitespace 
@@ -234,6 +236,7 @@ plt.show()
 
 # --- Build 100-train (50 Pichu, 50 Pikachu) and 50-test (25/25) via stratified sampling ---
 # Shuffle within each class to avoid reusing the same examples
+# Stratified selection by class (50/50 train, 25/25 test), idea discussed with ChatGPT.
 np.random.seed(42)  # Splitting
 pichu_shuffled   = pichu[np.random.permutation(len(pichu))]
 pikachu_shuffled = pikachu[np.random.permutation(len(pikachu))]
@@ -268,7 +271,7 @@ plt.legend()
 plt.show()
 
 # --- Classify with k-NN (k=10) and compute accuracy ---
-
+# Adapted from ChatGPT: k-NN with majority vote and tie-break by nearest neighbor; returns 0/1 labels.
 def classify_knn(test_point, train_data, k=10):
     dists = []
     for train in train_data:
@@ -315,7 +318,7 @@ print(f"k={k}  ->  TP={TP}, TN={TN}, FP={FP}, FN={FN}")
 print(f"Accuracy: {accuracy:.3f}")
 
 # --- Repeat stratified split + evaluation over 10 seeds ---
-
+# Inspired by ChatGPT: stratified split using a local RNG (reproducible seeds per run).
 def make_stratified_split(data, rng, n_train_per_class=50, n_test_per_class=25):
     """Returns (train_data, test_data) with exact balance 50/50 and 25/25 respectively."""
     pichu   = data[data[:, 2] == 0]
@@ -350,6 +353,7 @@ def make_stratified_split(data, rng, n_train_per_class=50, n_test_per_class=25):
     return train, test
 
 # --- Parametrar ---
+# Based on ChatGPT walkthrough: repeat split+evaluation over fixed seeds; plot per-run accuracy and mean line.
 K = 10
 SEEDS = [11,22,33,44,55,66,77,88,99,111]  # 10 different seeds
 
