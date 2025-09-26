@@ -255,3 +255,38 @@ plt.ylabel("Height (cm)")
 plt.title("Train vs Test data (Pichu & Pikachu)")
 plt.legend()
 plt.show()
+
+# --- Classifying KNN --- 
+def classify_knn(test_point, train_data, k=1):
+    distances = []
+    for train in train_data:
+        dist = euclidean_distance(test_point, train[:2])
+        distances.append((dist, int(train[2])))
+
+    # Sorting distance and k nearest n.
+    distances.sort(key=lambda x: x[0])
+    k_nearest = distances[:k]
+
+    # Counting the different labels
+    labels = [label for _, label in k_nearest]
+    pichu_count = labels.count(0)
+    pikachu_count = labels.count(1)
+
+    return 0 if pichu_count > pikachu_count else 1  # returning label
+# --- Calculating accuracy
+def calculate_accuracy(train_data, test_data, k=1):
+    correct = 0
+    for test in test_data:
+        predicted = classify_knn(test[:2], train_data, k)
+        actual = int(test[2])
+        if predicted == actual:
+            correct += 1
+    return correct / len(test_data)
+
+# 1-NN
+acc1 = calculate_accuracy(train_data, test_data, k=1)
+print(f"Accuracy with 1-NN: {acc1:.2f}")
+
+# 10-NN
+acc10 = calculate_accuracy(train_data, test_data, k=10)
+print(f"Accuracy with 10-NN: {acc10:.2f}")
