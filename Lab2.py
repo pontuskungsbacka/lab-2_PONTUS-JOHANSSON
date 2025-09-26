@@ -256,69 +256,43 @@ plt.title("Train vs Test data (Pichu & Pikachu)")
 plt.legend()
 plt.show()
 
-# --- Classifying KNN --- 
-def classify_knn(test_point, train_data, k=1, tie_break="nearest"):
-    """
-    Returns 0 (Pichu) or 1 (Pikachu) by majority vote among k nearest.
-    tie_break:
-    - "nearest": choose nearest neighbor label in case of tie
-    - "class1": always choose class 1 (Pikachu) in case of tie
-    - "class0": always choose class 0 (Pichu) in case of tie
-    """
-    # Distance + label
-    dists = [(np.hypot(*(test_point - tr[:2])), int(tr[2])) for tr in train_data]
+# --- Classifying KNN 10 and calculating accuracy ---
+
+def classify_knn(test_point, train_data, k=10):
+    dists = []
+    for tr in train_data:
+        d = euclidean_distance(test_point, tr[:2])
+        dists.append((d, int(tr[2])))
     dists.sort(key=lambda x: x[0])
     k_nearest = dists[:k]
     labels = [lab for _, lab in k_nearest]
-
     pichu = labels.count(0)
     pikachu = labels.count(1)
+    if pichu > pikachu: return 0
+    if pikachu > pichu: return 1
+    return k_nearest[0][1]  # tie-break
 
-    if pichu > pikachu:
-        return 0
-    elif pikachu > pichu:
-        return 1
-    else:
-        if tie_break == "nearest":
-            return k_nearest[0][1]
-        elif tie_break == "class1":
-            return 1
-        else:  # "class0"
-            return 0
-# --- Calculating accuracy
-def calculate_accuracy(train_data, test_data, k=1, tie_break="nearest"):
-    correct = 0
-    for tie in test_data:
-        pred = classify_knn(tie[:2], train_data, k=k, tie_break=tie_break)
-        if pred == int(tie[2]):
-            correct += 1
-    return correct / len(test_data)
+def predict_all(test_data, train_data, k=10):
+    return np.array([classify_knn(row[:2], train_data, k) for row in test_data], dtype=int)
 
-# 1-NN
-acc_1nn  = calculate_accuracy(train_data, test_data, k=1,  tie_break="nearest")
-print(f"Accuracy with 1-NN: {acc_1nn:.2f}")
+# 1) Actual labels in the test set (0 = Pichu, 1 = Pikachu)
+y_true = test_data[:, 2].astype(int)
 
-# 10-NN
-acc_10nn = calculate_accuracy(train_data, test_data, k=10, tie_break="nearest")
-print(f"Accuracy with 10-NN: {acc_10nn:.2f}")
+# 2) Predictions for all test examples with any k
+def predict_all(test_data, train_data, k=10):
+    return np.array([classify_knn(row[:2], train_data, k) for row in test_data])
 
-# --- Confusion Matrix
-def confusion_matrix(train_data, test_data, k=1):
-    TP = TN = FP = FN = 0
-    for test in test_data:
-        predicted = classify_knn(test[:2], train_data, k)
-        actual = int(test[2])
+k = 10 
+y_pred = predict_all(test_data, train_data, k=k)
 
-        if actual == 1 and predicted == 1:  # Pikachu korrekt
-            TP += 1
-        elif actual == 0 and predicted == 0:  # Pichu korrekt
-            TN += 1
-        elif actual == 0 and predicted == 1:  # Pichu -> Pikachu (fel)
-            FP += 1
-        elif actual == 1 and predicted == 0:  # Pikachu -> Pichu (fel)
-            FN += 1
+# 3) Count TP, TN, FP, FN (Pikachu = positive = 1)
+TP = int(np.sum((y_true == 1) & (y_pred == 1)))  # Pikachu correct
+TN = int(np.sum((y_true == 0) & (y_pred == 0)))  # Pichu correct
+FP = int(np.sum((y_true == 0) & (y_pred == 1)))  # Pichu -> Pikachu (FALSE)
+FN = int(np.sum((y_true == 1) & (y_pred == 0)))  # Pikachu -> Pichu (FALSE)
 
-    return TP, TN, FP, FN
+# 4) Accuracy = (TP + TN) / total
+accuracy = (TP + TN) / y_true.size
 
-TP, TN, FP, FN = confusion_matrix(train_data, test_data, k=10)
-print(f"Confusion Matrix (k=10):\nTP={TP}, TN={TN}, FP={FP}, FN={FN}")
+print(f"k={k}  ->  TP={TP}, TN={TN}, FP={FP}, FN={FN}")
+print(f"Accuracy: {accuracy:.3f}")
