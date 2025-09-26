@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import re
+"""
 
+"""
 # --- Paths ---
 datapointsfile =r"C:\Users\Pontus\python-programming-PONTUS-JOHANSSON\Labs\Lab-2\Data\datapoints.txt"
 testpointsfile =r"C:\Users\Pontus\python-programming-PONTUS-JOHANSSON\Labs\Lab-2\Data\testpoints.txt"
@@ -38,7 +40,7 @@ plt.show()
 # --- Testpoints list ---
 testpoints = []
 
-pat = re.compile(r'\(\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*\)') #Finds patterns
+pat = re.compile(r'\(\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*\)') #Finds patterns From searching in on Edge, co pilot suggested to use this code strip
 
 # --- Formatting and cleaning test points ---
 with open(testpointsfile, "r") as file:
@@ -272,8 +274,13 @@ def classify_knn(test_point, train_data, k=10):
     if pikachu > pichu: return 1
     return k_nearest[0][1]  # tie-break
 
-def predict_all(test_data, train_data, k=10):
-    return np.array([classify_knn(row[:2], train_data, k) for row in test_data], dtype=int)
+def calculate_accuracy(train_data, test_data, k=10):
+    correct = 0
+    for row in test_data:
+        pred = classify_knn(row[:2], train_data, k)
+        if pred == int(row[2]):
+            correct += 1
+    return correct / len(test_data)
 
 # 1) Actual labels in the test set (0 = Pichu, 1 = Pikachu)
 y_true = test_data[:, 2].astype(int)
@@ -296,3 +303,74 @@ accuracy = (TP + TN) / y_true.size
 
 print(f"k={k}  ->  TP={TP}, TN={TN}, FP={FP}, FN={FN}")
 print(f"Accuracy: {accuracy:.3f}")
+
+# --------- Making the experiment 10 times and calculating the accuracy --------
+
+def make_stratified_split(data, rng, n_train_per_class=50, n_test_per_class=25):
+    """Returns (train_data, test_data) with exact balance 50/50 and 25/25 respectively."""
+    pichu   = data[data[:, 2] == 0]
+    pikachu = data[data[:, 2] == 1]
+
+    # Checking 
+    need_per_class = n_train_per_class + n_test_per_class
+    if len(pichu) < need_per_class or len(pikachu) < need_per_class:
+        raise ValueError(f"Need at least {need_per_class} points per class, "
+                        f"has Pichu={len(pichu)}, Pikachu={len(pikachu)}.")
+
+    # Randomize indices within each class via rng
+    p_idx = rng.permutation(len(pichu))
+    k_idx = rng.permutation(len(pikachu))
+
+    pichu_shuf   = pichu[p_idx]
+    pikachu_shuf = pikachu[k_idx]
+
+    # Pick 50/50 for training and 25/25 for testing
+    p_train = pichu_shuf[:n_train_per_class]
+    p_test  = pichu_shuf[n_train_per_class:n_train_per_class + n_test_per_class]
+
+    k_train = pikachu_shuf[:n_train_per_class]
+    k_test  = pikachu_shuf[n_train_per_class:n_train_per_class + n_test_per_class]
+
+    train = np.vstack([p_train, k_train])
+    test  = np.vstack([p_test,  k_test])
+
+    # Shuffle the order
+    train = train[rng.permutation(len(train))]
+    test  = test[rng.permutation(len(test))]
+    return train, test
+
+# --------- Parametrar ---------
+K = 10
+SEEDS = [11,22,33,44,55,66,77,88,99,111]  # 10 different seeds
+
+# --------- Makin the experiment 10 times ---------
+accuracies = []
+for run, seed in enumerate(SEEDS, start=1):
+    rng = np.random.default_rng(seed)
+    train_data, test_data = make_stratified_split(data, rng, n_train_per_class=50, n_test_per_class=25)
+    acc = calculate_accuracy(train_data, test_data, k=K)
+    accuracies.append(acc)
+    print(f"Running {run:2d} (seed={seed}): accuracy = {acc:.2f}")
+
+# --------- Compilation ---------
+accuracies = np.array(accuracies, dtype=float)
+mean_acc = float(np.mean(accuracies))
+std_acc  = float(np.std(accuracies, ddof=1))
+min_acc  = float(np.min(accuracies))
+max_acc  = float(np.max(accuracies))
+
+print("\nSummary over 10 runs:")
+print(f"Middle accuracy: {mean_acc:.3f}")
+print(f"Std (spread): {std_acc:.3f}")
+print(f"Min/Max: {min_acc:.3f} / {max_acc:.3f}")
+
+# --------- Plot ---------
+plt.figure(figsize=(7,4))
+plt.plot(range(1, len(accuracies)+1), accuracies, marker="o")
+plt.axhline(mean_acc, linestyle="--")
+plt.xticks(range(1, len(accuracies)+1))
+plt.ylim(0.0, 1.0)
+plt.xlabel("Runs")
+plt.ylabel("Accuracy")
+plt.title(f"Accuracy over 10 runs (k={K})")
+plt.show()
